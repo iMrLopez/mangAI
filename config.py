@@ -32,7 +32,7 @@ class Config:
     TTS_SPEECH_RATE = int(os.getenv("TTS_SPEECH_RATE", "150"))
     
     # Confidence thresholds
-    YOLO_CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.5"))
+    YOLO_CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.25"))
     OCR_CONFIDENCE_THRESHOLD = float(os.getenv("OCR_CONFIDENCE_THRESHOLD", "0.3"))
     
     # File settings
