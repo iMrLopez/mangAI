@@ -90,7 +90,7 @@ def demo_pipeline():
             print(f"     Frame {i}: {frame['class_name']} (confidence: {frame['confidence']:.2f})")
         
         # Extract frames to see the actual cropped images
-        output_dir = frame_detector.extract_frames_to_folder()
+        output_dir = frame_detector.extract_frames()
         print(f"     Frames extracted to: {output_dir}")
         
         # Step 2: OCR Processing

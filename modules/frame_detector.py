@@ -268,7 +268,7 @@ class FrameDetector:
         
         return rank, y_min_tol, min_index
     
-    def extract_frames_to_folder(self, output_dir: Optional[str] = None) -> str:
+    def extract_frames(self, output_dir: Optional[str] = None) -> str:
         """
         Extract detected frames to individual image files
         
@@ -292,18 +292,19 @@ class FrameDetector:
         image = cv2.imread(self.current_image_path)
         
         # Extract and save each frame
+        frame_array = ["" for _ in range(len(self.frames))]
+        print(frame_array)
         for frame in self.frames:
             x1, y1, x2, y2 = frame["bbox"]
             cropped = image[y1:y2, x1:x2]
-            
             frame_number = frame.get("reading_order", frame.get("rank", frame["frame_id"]))
             filename = f"frame_{frame_number:03d}_{frame['class_name']}.jpg"
             save_path = os.path.join(output_dir, filename)
-            
+            frame_array[frame_number] = './' + save_path
             cv2.imwrite(save_path, cropped)
         
         print(f"Extracted {len(self.frames)} frames to {output_dir}")
-        return output_dir
+        return frame_array
     
     def visualize_detections(self, image_path: str, model_type: str = "frame", save_path: Optional[str] = None):
         """

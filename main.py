@@ -4,11 +4,11 @@ from modules.frame_detector import FrameDetector
 detector = FrameDetector()
 
 # Run frame detection and ordering
-detector.detect_frames("./images/test4.jpg", "frame")
+detector.detect_frames("./images/test2.jpg", "frame")
 
 # Extract frames to folder
-output_folder = detector.extract_frames_to_folder()
-print(f"Frames extracted to: {output_folder}")
+frames = detector.extract_frames()
+print(f"Frames extracted: {frames}")
 
 # Get statistics
 stats = detector.get_frame_statistics(detector.frames)
