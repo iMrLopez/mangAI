@@ -16,7 +16,7 @@ class Config:
     
     # Model paths
     MODEL_PATHS = {
-        "frame": "./models/yolo8l_50epochs/best.pt",
+        "frame": "./models/yolo8l_50epochs_frame/best.pt",
         "panel": "./models/yolo8l_50epochs/best.pt",
         "text-frame": "./models/yolo8l_50epochs/best.pt"
     }
