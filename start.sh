@@ -5,13 +5,6 @@
 
 echo "🚀 Starting MangAI Application..."
 
-# Check if running in Docker
-if [ -f /.dockerenv ]; then
-    echo "📦 Running in Docker container"
-else
-    echo "💻 Running locally"
-fi
-
 # Create necessary directories
 echo "📁 Creating directories..."
 mkdir -p audio_output

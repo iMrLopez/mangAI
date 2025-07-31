@@ -65,6 +65,23 @@ The original `yolov8Model.py` functionality has been integrated into `modules/fr
 
 ## Quick Start
 
+### Vanilla 
+
+1. **Create python local env:**
+```bash
+ git clone <repository-url>
+ python3 -m venv venv
+ source venv/bin/activate
+ pip install --upgrade pip
+ pip install -r requirements.txt
+```
+2. **Run the application:**
+   ```bash
+   ./start.sh
+   # or
+   streamlit run app.py
+   ```
+
 ### Using Docker (Recommended)
 
 1. **Clone and navigate to the project:**
