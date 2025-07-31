@@ -1,207 +1,129 @@
 """
 OCR Processor Module
-Extracts text from manga frames using OCR technology
+Extracts text from images using PaddleOCR
 """
 
-import cv2
-import numpy as np
-from typing import List, Dict, Optional
-import tempfile
 import os
+import cv2
+import json
+import logging
+import numpy as np
+from PIL import Image
+from typing import List, Dict
+from paddleocr import PaddleOCR
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class OCRProcessor:
-    def __init__(self):
-        """Initialize the OCR processor for English only"""
-        self.supported_languages = {
-            "en": "eng"  # English only
-        }
-        self.current_language = "en"
-    
-    def set_language(self, language: str):
-        """Set the OCR language (English only)"""
-        if language != "en":
-            raise ValueError(f"Only English is supported. Provided: {language}")
-        
-        self.current_language = "en"
-        print(f"OCR language set to: English")
-    
-    def extract_text(self, frames: List[Dict], language: str = "en") -> List[Dict]:
+    def __init__(
+        self,
+        use_doc_orientation_classify: bool = False,
+        use_doc_unwarping: bool = False,
+        use_textline_orientation: bool = False,
+        lang: str = "en"
+    ):
+        """Initialize the OCR processor"""
+        self.ocr = PaddleOCR(
+            use_doc_orientation_classify=use_doc_orientation_classify,
+            use_doc_unwarping=use_doc_unwarping,
+            use_textline_orientation=use_textline_orientation,
+            lang=lang
+        )
+
+    def extract_text(self, image_paths: List[str], language: str = "en") -> List[Dict]:
         """
-        Extract text from detected frames using OCR
-        
+        Extract text from a list of image file paths using OCR.
+
         Args:
-            frames: List of frame dictionaries from FrameDetector
-            language: Language code for OCR
-        
+            image_paths (List[str]): List of image file paths
+            language (str): OCR language code
+
         Returns:
-            List of frames with extracted text
+            List[Dict]: Each dict includes file path, raw_text, cleaned_text, text_regions, and confidence
         """
-        self.set_language(language)
-        
         processed_frames = []
-        
-        for frame in frames:
+
+        for image_path in image_paths:
             try:
-                # Get the cropped image
-                cropped_image = frame["cropped_image"]
-                
-                # Preprocess image for better OCR
-                processed_image = self._preprocess_image(cropped_image)
-                
-                # Extract text using OCR
-                extracted_text = self._perform_ocr(processed_image)
-                
-                # Create processed frame dictionary
-                processed_frame = {
-                    **frame,  # Copy original frame data
-                    "raw_text": extracted_text,
-                    "cleaned_text": self._clean_text(extracted_text),
-                    "text_regions": self._detect_text_regions(processed_image),
-                    "ocr_confidence": self._get_ocr_confidence(processed_image, extracted_text)
-                }
-                
-                processed_frames.append(processed_frame)
-                
+                logger.info(f"Processing image: {image_path}")
+                image = Image.open(image_path).convert("RGB")
+                processed_image = self._preprocess_image(image)
+
+                json_path = self._run_ocr_on_image(image)
+                raw_text = self._extract_text_from_json(json_path)
+
+                cleaned_text = self._clean_text(raw_text)
+                text_regions = self._detect_text_regions(processed_image)
+                confidence = self._get_ocr_confidence(processed_image, raw_text)
+
+                processed_frames.append({
+                    "image_path": image_path,
+                    "raw_text": raw_text,
+                    "cleaned_text": cleaned_text,
+                    "text_regions": text_regions,
+                    "ocr_confidence": confidence
+                })
+
             except Exception as e:
-                print(f"Error processing frame {frame.get('frame_id', 'unknown')}: {str(e)}")
-                # Add frame with empty text on error
-                processed_frame = {
-                    **frame,
+                logger.error(f"Error processing image {image_path}: {str(e)}")
+                processed_frames.append({
+                    "image_path": image_path,
                     "raw_text": "",
                     "cleaned_text": "",
                     "text_regions": [],
                     "ocr_confidence": 0.0,
                     "error": str(e)
-                }
-                processed_frames.append(processed_frame)
-        
-        print(f"OCR processing complete. Processed {len(processed_frames)} frames.")
+                })
+
         return processed_frames
-    
-    def _preprocess_image(self, image: np.ndarray) -> np.ndarray:
-        """
-        Preprocess image for better OCR results
-        """
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # TODO: Implement actual preprocessing
-        # - Noise reduction
-        # - Contrast enhancement
-        # - Binarization
-        # - Deskewing
-        
-        # For now, return simple processing
-        # Apply Gaussian blur to reduce noise
-        # blurred = cv2.GaussianBlur(gray, (1, 1), 0)
-        
-        # Apply threshold to get binary image
-        # _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
+
+    def _run_ocr_on_image(self, image: Image.Image, output_dir: str = "ocr_output") -> str:
+        """Run OCR on an image and save result to JSON"""
+        image_np = np.array(image)
+        result = self.ocr.predict(image_np)
+
+        os.makedirs(output_dir, exist_ok=True)
+        output_json_path = os.path.join(output_dir, "output.json")
+
+        for res in result:
+            res.save_to_img(output_dir)
+            res.save_to_json(output_json_path)
+
+        return output_json_path
+
+    def _extract_text_from_json(self, json_path: str) -> str:
+        """Extract concatenated text from PaddleOCR result JSON"""
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return " ".join(data.get("rec_texts", []))
+
+    def _preprocess_image(self, image: Image.Image) -> np.ndarray:
+        """Convert to grayscale and optionally add enhancement steps"""
+        image_np = np.array(image)
+        gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY) if image_np.ndim == 3 else image_np
         return gray
-    
-    def _perform_ocr(self, image: np.ndarray) -> str:
-        """
-        Perform OCR on preprocessed image
-        """
-        # TODO: Implement actual OCR using pytesseract
-        # import pytesseract
-        # 
-        # lang_code = self.supported_languages[self.current_language]
-        # 
-        # # Save image temporarily for pytesseract
-        # with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
-        #     cv2.imwrite(tmp_file.name, image)
-        #     
-        #     # Perform OCR
-        #     text = pytesseract.image_to_string(
-        #         tmp_file.name,
-        #         lang=lang_code,
-        #         config='--psm 6'  # Assume uniform block of text
-        #     )
-        #     
-        #     # Clean up temporary file
-        #     os.unlink(tmp_file.name)
-        #     
-        #     return text.strip()
-        
-        # Mock OCR result for scaffold
-        mock_texts = [
-            "Hello! How are you doing today?",
-            "This is an amazing adventure!",
-            "We need to find the treasure quickly!",
-            "The mysterious door opens slowly...",
-            "What lies beyond this point?"
-        ]
-        
-        import random
-        return random.choice(mock_texts)
-    
+
     def _clean_text(self, raw_text: str) -> str:
-        """
-        Clean and normalize extracted text
-        """
+        """Basic cleanup of OCR text"""
         if not raw_text:
             return ""
-        
-        # Remove extra whitespace
         cleaned = ' '.join(raw_text.split())
-        
-        # Remove common OCR artifacts
-        cleaned = cleaned.replace('|', 'I')
-        cleaned = cleaned.replace('0', 'O')  # Common OCR mistake
-        
-        # TODO: Add more cleaning rules based on language
-        
+        cleaned = cleaned.replace('|', 'I').replace('0', 'O')
         return cleaned.strip()
-    
+
     def _detect_text_regions(self, image: np.ndarray) -> List[Dict]:
-        """
-        Detect text regions in the image for better processing
-        """
-        # TODO: Implement text region detection
-        # This could use techniques like:
-        # - EAST text detector
-        # - CRAFT text detector
-        # - Contour analysis
-        
-        # For now, return mock regions
+        """Mock detection of text regions"""
         height, width = image.shape[:2]
-        mock_regions = [
-            {
-                "bbox": (width//4, height//4, 3*width//4, 3*height//4),
-                "confidence": 0.85
-            }
-        ]
-        
-        return mock_regions
-    
+        return [{
+            "bbox": (width // 4, height // 4, 3 * width // 4, 3 * height // 4),
+            "confidence": 0.85
+        }]
+
     def _get_ocr_confidence(self, image: np.ndarray, text: str) -> float:
-        """
-        Get confidence score for OCR results
-        """
-        # TODO: Implement actual confidence calculation
-        # pytesseract can provide confidence scores
-        
-        # Mock confidence based on text length (longer text = higher confidence)
+        """Mock confidence score based on text length"""
         if not text:
             return 0.0
-        
         base_confidence = min(0.9, len(text) / 50.0)
         return max(0.1, base_confidence)
-    
-    def get_text_statistics(self, processed_frames: List[Dict]) -> Dict:
-        """Get statistics about extracted text"""
-        total_chars = sum(len(frame.get("cleaned_text", "")) for frame in processed_frames)
-        avg_confidence = np.mean([frame.get("ocr_confidence", 0) for frame in processed_frames])
-        
-        return {
-            "total_frames": len(processed_frames),
-            "frames_with_text": len([f for f in processed_frames if f.get("cleaned_text", "")]),
-            "total_characters": total_chars,
-            "average_confidence": avg_confidence
-        }

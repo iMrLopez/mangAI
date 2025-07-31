@@ -100,6 +100,7 @@ class MangaAIApp:
     def _render_main_content(self):
         """Render the main content area"""
         col1, col2 = st.columns([1, 1])
+        self.result_placeholder = col2.empty()
         
         with col1:
             st.header("📤 Upload Manga Page")
@@ -165,8 +166,9 @@ class MangaAIApp:
                 # Step 1: Frame Detection
                 status_text.text("🔍 Detecting frames...")
                 progress_bar.progress(25)
-                frames = self.frame_detector.detect_frames(temp_path, self.model_type)
-                
+                self.frame_detector.detect_frames(temp_path, self.model_type)
+                frames = self.frame_detector.extract_frames()
+
                 # Step 2: OCR Processing
                 status_text.text("📝 Extracting text...")
                 progress_bar.progress(66)
@@ -197,7 +199,7 @@ class MangaAIApp:
                 if self.config.DEBUG:
                     st.exception(e)
     
-    def _process_extracted_text(self, extracted_texts: list) -> str:
+    def _process_extracted_text(self, extracted_texts: list[dict]) -> str:
         """
         Process extracted text fragments into a coherent narrative without LLM
         
@@ -209,15 +211,17 @@ class MangaAIApp:
         """
         # Extract text fragments and sort by reading order
         text_fragments = []
-        for frame in extracted_texts:
+        
+        for idx, frame in enumerate(extracted_texts):
             cleaned_text = frame.get("cleaned_text", "").strip()
             if cleaned_text:
                 text_fragments.append({
                     "text": cleaned_text,
-                    "reading_order": frame.get("reading_order", frame.get("frame_id", 0)),
+                    "image_path": frame.get("image_path"),
+                    "reading_order": idx,  # fallback since extract_text does not provide reading_order
                     "confidence": frame.get("ocr_confidence", 0.0)
                 })
-        
+                
         if not text_fragments:
             return "No readable text was found in this manga page."
         
