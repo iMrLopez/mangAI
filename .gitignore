@@ -65,7 +65,7 @@ ipython_config.py
 
 # pyenv
 .python-version
-
+venv/
 # Streamlit
 .streamlit/
 
@@ -109,3 +109,6 @@ models/*/runs/
 models/*/weights/
 *.pt.backup
 *.onnx
+
+# OCR Output
+ocr_output/
