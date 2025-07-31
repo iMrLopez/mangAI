@@ -268,7 +268,7 @@ class FrameDetector:
         
         return rank, y_min_tol, min_index
     
-    def extract_frames(self, output_dir: Optional[str] = None) -> str:
+    def extract_frames(self, output_dir: Optional[str] = None) -> list[str]:
         """
         Extract detected frames to individual image files
         
