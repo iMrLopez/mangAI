@@ -12,4 +12,4 @@ paddleocr>=3.1.0
 paddlepaddle>=2.5.0 
 opencv-python-headless>=4.5.1.48
 openai>=1.98.0
-ollama>=0.10.1
+ollama>=0.5.2
