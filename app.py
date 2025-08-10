@@ -6,7 +6,7 @@ from modules.frame_detector import FrameDetector
 from modules.ocr_processor import OCRProcessor
 from modules.tts_generator import TTSGenerator
 from config import Config
-from modules.llm_processor import LLM_Vision
+from modules.llm_processor import LLM_Vision,LLM_Narrator
 
 
 class MangaAIApp:
@@ -16,6 +16,7 @@ class MangaAIApp:
         self.ocr_processor = OCRProcessor()
         self.tts_generator = TTSGenerator()
         self.llm_vision = LLM_Vision()
+        self.llm_narrator = LLM_Narrator()
         
         # Validate configuration on startup
         self.config_status = self.config.validate_config()
@@ -175,7 +176,7 @@ class MangaAIApp:
                 status_text.text("📝 Extracting text...")
                 progress_bar.progress(66)
                 extracted_texts = self.ocr_processor.extract_text(frames, "en")  # English only
-                
+                  
                 # Step 3: Text Processing
                 status_text.text("📝 Processing text...")
                 progress_bar.progress(70)
@@ -188,8 +189,13 @@ class MangaAIApp:
                 for frame in frames:
                     description = self.llm_vision.processImages(frame)
                     frame_descriptions.append(description)
+
+                # Step 5: Creating the manga script for the story
+                status_text.text("📝 Creating the story script...")
+                progress_bar.progress(90)
+                mangaScript = self.llm_narrator.frameScript(frame_descriptions,extracted_texts)
                 
-                # Step 5: TTS Generation
+                # Step 6: TTS Generation
                 status_text.text("🎵 Generating audio...")
                 self.tts_generator.configure_tts("en", self.speech_rate)  # English only
                 progress_bar.progress(100)

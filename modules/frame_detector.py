@@ -293,7 +293,6 @@ class FrameDetector:
         
         # Extract and save each frame
         frame_array = ["" for _ in range(len(self.frames))]
-        print(frame_array)
         for frame in self.frames:
             x1, y1, x2, y2 = frame["bbox"]
             cropped = image[y1:y2, x1:x2]
