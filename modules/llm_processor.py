@@ -188,32 +188,30 @@ class LLM_Narrator:
                 sentences.append(line.lstrip("-").strip())  # remove leading hyphen & spaces
         return sentences
     
-    def frameScript(self,llmOriginalDescription,ocrText):
+    def frameScript(self, llmOriginalDescription, ocrText):
         scriptArray = []
-        # First, process the llm descriptions and update the descriptions to have a logical sequence
+        
+        # Process descriptions
         originalDesc = self.getOriginalDescription(llmOriginalDescription)
         updatedDesc = self.updateFrameDescription(originalDesc)
         updatedDescArray = self.extract_hyphen_sentences(updatedDesc)
-        """ The script will be given in the following order
-        - Description of Frame 1
-        - OCR Text of Frame 1
-        ....
-        - Description of Frame N
-        - OCR Text of Frame N
 
-        """
         for i in range(len(llmOriginalDescription)):
             # narrator
-            scriptArray.append({"role": "narrator", "description": updatedDescArray[i],"emotion": "calm"})
+            scriptArray.append({
+                "role": "narrator",
+                "description": updatedDescArray[i],
+                "emotion": "calm"
+            })
             # character
             frameDescriptionJson = self.convertToJson(llmOriginalDescription[i])
-            scriptArray.append({"role": "character", "description": ocrText[i]["cleaned_text"],"emotion": frameDescriptionJson["emotion"]})
-            counter = 0
-        for script in scriptArray:
-            counter = counter + 1
-            print("******* Frame " + str(counter))
-            print(script)
-            print("\n")
+            scriptArray.append({
+                "role": "character",
+                "description": ocrText[i]["cleaned_text"],
+                "emotion": frameDescriptionJson["emotion"]
+            })
+
+        return scriptArray
 
 
 
