@@ -193,7 +193,23 @@ class MangaAIApp:
                 # Step 5: Creating the manga script for the story
                 status_text.text("📝 Creating the story script...")
                 progress_bar.progress(90)
-                mangaScript = self.llm_narrator.frameScript(frame_descriptions,extracted_texts)
+                mangaScript = self.llm_narrator.frameScript(frame_descriptions,extracted_texts)            
+                cues = []
+                for entry in mangaScript:
+                    role = entry['role'].lower()
+                    description = entry['description']
+                    
+                    if role == 'narrator':
+                        cue = f"[{description}]"
+                    elif role == 'character':
+                        cue = f"{entry['role'].capitalize()}: {description}"
+                    else:
+                        cue = description
+                    
+                    cues.append(cue)
+
+                # Combine into a single string (if needed)
+                final_output = "\n".join(cues)
                 
                 # Step 6: TTS Generation
                 status_text.text("🎵 Generating audio...")
@@ -204,7 +220,7 @@ class MangaAIApp:
                 # Display results
                 status_text.text("✅ Processing complete!")
                 
-                self._display_results(frames, extracted_texts, processed_text, audio_path)
+                self._display_results(frames, extracted_texts, final_output, audio_path)
                 
                 # Clean up temporary files
                 os.unlink(temp_path)
@@ -330,7 +346,7 @@ class MangaAIApp:
                 st.metric("Word Count", tts_stats['text_length_words'])
         
         # Show processed text
-        with st.expander("📄 Generated Narrative"):
+        with st.expander("📄 Generated Transcript"):
             st.text_area("Processed text:", processed_text, height=150)
         
         # Audio player
