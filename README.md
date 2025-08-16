@@ -27,6 +27,7 @@ A manga-to-audio application that converts English manga pages into immersive au
 📊 **For detailed interactive diagrams, see [`architecture_diagram.md`](./architecture_diagram.md)** - Contains comprehensive Mermaid diagrams showing system architecture, data flow, and component interactions.
 
 ### High-Level Flow
+
 ```
 ┌─────────────────────┐
 │   Streamlit App     │  ← Web Frontend with Multi-Voice Controls
@@ -68,6 +69,7 @@ A manga-to-audio application that converts English manga pages into immersive au
 📊 **For detailed interactive diagrams, see [`architecture_diagram.md`](./architecture_diagram.md)** - Contains comprehensive Mermaid diagrams showing system architecture, data flow, and component interactions.
 
 ### High-Level Flow
+
 ```
 ┌─────────────────────┐
 │   Streamlit App     │  ← Web Frontend
@@ -107,12 +109,14 @@ The original `yolov8Model.py` functionality has been integrated into `modules/fr
 ### Prerequisites
 
 Before running MangAI, you need to obtain API keys for:
+
 - **OpenAI API**: For GPT-4 Vision and Text processing
 - **ElevenLabs API**: For multi-voice TTS generation
 
 ### Local Development Setup
 
 1. **Clone and set up the project:**
+
    ```bash
    git clone <repository-url>
    cd mangAI
@@ -125,15 +129,16 @@ Before running MangAI, you need to obtain API keys for:
 
 2. **Configure API credentials:**
    Create a `.env` file in the project root:
+
    ```bash
    # OpenAI Configuration
    OPENAI_API_KEY=your_openai_api_key_here
-   
+
    # ElevenLabs Configuration
    ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
    ELEVENLABS_NARRATOR_VOICE_ID=voice_id_for_narrator
    ELEVENLABS_CHARACTER_VOICE_ID=voice_id_for_character
-   
+
    # Application Settings
    DEFAULT_YOLO_MODEL=frame
    YOLO_CONFIDENCE_THRESHOLD=0.5
@@ -141,6 +146,7 @@ Before running MangAI, you need to obtain API keys for:
    ```
 
 3. **Run the application:**
+
    ```bash
    ./start.sh
    # or directly:
@@ -165,15 +171,17 @@ pip install -r requirements.txt
 # Run the application
 ./start.sh
 ```
-   
-   # macOS
-   brew install tesseract
-   ```
+
+# macOS
+
+brew install tesseract
+
+````
 
 3. **Test the integration:**
-   ```bash
-   python test_integration.py
-   ```
+```bash
+python test_integration.py
+````
 
 4. **Run the application:**
    ```bash
@@ -243,10 +251,12 @@ OCR_CONFIDENCE_THRESHOLD=0.3
 ### API Configuration
 
 1. **OpenAI API Setup**:
+
    - Get your API key from [OpenAI Platform](https://platform.openai.com/)
    - The app uses GPT-4 Vision for scene analysis and GPT-4 Text for narrative generation
 
 2. **ElevenLabs API Setup**:
+
    - Get your API key from [ElevenLabs](https://elevenlabs.io/)
    - Create or select voice IDs for narrator and character roles
    - The app generates separate audio tracks for different voices
@@ -259,7 +269,7 @@ OCR_CONFIDENCE_THRESHOLD=0.3
 ## Usage
 
 1. **Upload Image**: Select an English manga page image (PNG, JPG, JPEG)
-2. **Configure Settings**: 
+2. **Configure Settings**:
    - Choose YOLO detection model
    - Adjust confidence thresholds if needed
 3. **Generate Audio**: Click "Generate Audio" to start processing
@@ -268,7 +278,7 @@ OCR_CONFIDENCE_THRESHOLD=0.3
    - AI scene analysis using GPT-4 Vision
    - Narrative script generation using GPT-4 Text
    - Multi-voice audio generation using ElevenLabs
-4. **Review Results**: 
+4. **Review Results**:
    - View processing statistics
    - Play separate narrator/character audio or combined version
    - Download individual audio files or complete transcript
@@ -285,11 +295,11 @@ class NewProcessor:
     def __init__(self, config=None):
         """Initialize the processor with configuration"""
         self.config = config or Config()
-    
+
     def process(self, input_data, output_dir=None):
         """Main processing method with structured output"""
         pass
-    
+
     def get_statistics(self):
         """Return processing statistics"""
         pass
@@ -298,17 +308,20 @@ class NewProcessor:
 ### Model Integration
 
 **Adding New YOLO Models**:
+
 1. Place model files in `./models/model_name/best.pt`
 2. Update `config.py` MODEL_PATHS dictionary
 3. The frame detector will automatically load and use them
 
 **Integrating Alternative LLM Providers**:
+
 1. Extend `LLMProcessor` class in `modules/llm_processor.py`
 2. Implement vision and text processing methods
 3. Add provider configuration in `config.py`
 4. Update frontend provider selection
 
 **Adding New TTS Providers**:
+
 1. Extend `TTSGenerator` class in `modules/tts_generator.py`
 2. Implement multi-voice generation methods
 3. Add API configuration and voice settings
@@ -317,6 +330,7 @@ class NewProcessor:
 ### Directory Structure Standards
 
 All processing modules should use the structured directory pattern:
+
 ```
 processed_YYYYMMDD_HHMMSS/
 ├── frames/          # Input frames and extraction results
@@ -339,15 +353,18 @@ processed_YYYYMMDD_HHMMSS/
 ### Common Issues
 
 1. **API Configuration**:
+
    - Ensure OpenAI API key is valid and has GPT-4 access
    - Verify ElevenLabs API key and voice IDs are correct
    - Check API rate limits and quotas
 
 2. **Model Files**:
+
    - Ensure YOLO models are in the correct paths (`./models/*/best.pt`)
    - Check model file permissions and accessibility
 
 3. **Processing Errors**:
+
    - OCR confidence too low: Adjust `OCR_CONFIDENCE_THRESHOLD`
    - Frame detection issues: Try different YOLO models or adjust confidence
    - LLM processing failures: Check API keys and rate limits
@@ -360,6 +377,7 @@ processed_YYYYMMDD_HHMMSS/
 ### Logs and Debugging
 
 Check processing logs:
+
 ```bash
 # View application logs
 tail -f logs/app.log
