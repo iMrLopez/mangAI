@@ -3,7 +3,21 @@
 # MangAI Startup Script
 # This script sets up the environment and starts the application
 
+echo "----- APP NEEDS PYTHON 3.11.11 -----"
+echo "----- APP NEEDS PYENV -----"
+
 echo "🚀 Starting MangAI Application..."
+
+echo "Setting python version"
+pyenv local 3.11.11
+
+echo "Creating venv"
+python3 -m venv virtualenv
+source virtualenv/bin/activate
+
+# Install dependencies
+echo "📦 Installing dependencies..."
+pip3 install -r requirements.txt
 
 # Create necessary directories
 echo "📁 Creating directories..."
