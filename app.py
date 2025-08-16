@@ -69,6 +69,16 @@ class MangaAIApp:
     def _render_sidebar(self):
         """Render the sidebar with settings"""
         with st.sidebar:
+            # Add logo at the top of sidebar
+            try:
+                logo_path = "images/mangAI.png"
+                if os.path.exists(logo_path):
+                    logo_image = Image.open(logo_path)
+                    st.image(logo_image, width=200)
+                    st.divider()
+            except Exception as e:
+                st.warning(f"Could not load logo: {e}")
+            
             st.header("⚙️ Settings")
             
             self.model_type = st.selectbox(
