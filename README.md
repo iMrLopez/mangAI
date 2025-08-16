@@ -1,10 +1,11 @@
 # MangAI 📚🎵
 
-<div align="center">
-  <img src="images/mangAI.png" alt="MangAI Logo" width="300">
+<div style="display: flex; align-items: center; gap: 20px;">
+   <img src="images/mangAI.png" alt="MangAI Logo" width="300">
+   <div>
+      A manga-to-audio application that converts English manga pages into immersive audio narratives using AI. Upload a manga image and generate a complete audio story with separate narrator and character voices using OpenAI GPT-4 Vision, GPT-4 Text, and ElevenLabs multi-voice TTS!
+   </div>
 </div>
-
-A manga-to-audio application that converts English manga pages into immersive audio narratives using AI. Upload a manga image and generate a complete audio story with separate narrator and character voices using OpenAI GPT-4 Vision, GPT-4 Text, and ElevenLabs multi-voice TTS!
 
 ## Features
 
