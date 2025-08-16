@@ -55,8 +55,16 @@ class MangaAIApp:
             with col2:
                 st.subheader("Language & Processing")
                 st.write("🇺🇸 English Only")
-                st.write("📝 Simple Text Processing")
-                st.write("🎵 Local TTS Generation")
+                st.write("📝 Character & Narrator Script")
+                st.write("🎵 Multi-Voice TTS Generation")
+                
+                # Show voice configuration
+                if hasattr(self.tts_generator, 'voice_ids'):
+                    with st.expander("🎭 Voice Configuration"):
+                        narrator_id = self.tts_generator.voice_ids.get('narrator', 'Not set')
+                        character_id = self.tts_generator.voice_ids.get('character', 'Not set')
+                        st.caption(f"Narrator: {narrator_id}")
+                        st.caption(f"Character: {character_id}")
     
     def _render_sidebar(self):
         """Render the sidebar with settings"""
@@ -166,25 +174,28 @@ class MangaAIApp:
                     tmp_file.write(uploaded_file.getvalue())
                     temp_path = tmp_file.name
                 
-                # Step 1: Frame Detection
+                # Step 1: Frame Detection and Setup Processing Directories
                 status_text.text("🔍 Detecting frames...")
-                progress_bar.progress(25)
+                progress_bar.progress(16)
                 self.frame_detector.detect_frames(temp_path, self.model_type)
-                frames = self.frame_detector.extract_frames()
-
+                frames, frames_output_dir, processing_dirs = self.frame_detector.extract_frames()
+                
+                # Set up output directories for all components
+                self.tts_generator.set_output_directory(processing_dirs['audio'])
+                
                 # Step 2: OCR Processing
                 status_text.text("📝 Extracting text...")
-                progress_bar.progress(66)
-                extracted_texts = self.ocr_processor.extract_text(frames, "en")  # English only
+                progress_bar.progress(33)
+                extracted_texts = self.ocr_processor.extract_text(frames, "en", processing_dirs['ocr'])  # English only
                   
                 # Step 3: Text Processing
                 status_text.text("📝 Processing text...")
-                progress_bar.progress(70)
+                progress_bar.progress(49)
                 processed_text = self._process_extracted_text(extracted_texts)
 
                 # Step 4: Scene description
                 status_text.text("📝 Analyzing the frame scenes...")
-                progress_bar.progress(80)
+                progress_bar.progress(65)
                 frame_descriptions = []
                 for frame in frames:
                     description = self.llm_vision.processImages(frame)
@@ -192,35 +203,20 @@ class MangaAIApp:
 
                 # Step 5: Creating the manga script for the story
                 status_text.text("📝 Creating the story script...")
-                progress_bar.progress(90)
+                progress_bar.progress(81)
                 mangaScript = self.llm_narrator.frameScript(frame_descriptions,extracted_texts)            
-                cues = []
-                for entry in mangaScript:
-                    role = entry['role'].lower()
-                    description = entry['description']
-                    
-                    if role == 'narrator':
-                        cue = f"[{description}]"
-                    elif role == 'character':
-                        cue = f"{entry['role'].capitalize()}: {description}"
-                    else:
-                        cue = description
-                    
-                    cues.append(cue)
-
-                # Combine into a single string (if needed)
-                final_output = "\n".join(cues)
                 
-                # Step 6: TTS Generation
+                # Step 6: TTS Generation - Use structured data directly
                 status_text.text("🎵 Generating audio...")
                 self.tts_generator.configure_tts("en", self.speech_rate)  # English only
-                progress_bar.progress(100)
-                audio_path = self.tts_generator.generate_audio(processed_text, "en")
+                progress_bar.progress(85)
+                audio_path = self.tts_generator.generate_audio_from_script(mangaScript, "en")
                 
                 # Display results
+                progress_bar.progress(100)
                 status_text.text("✅ Processing complete!")
                 
-                self._display_results(frames, extracted_texts, final_output, audio_path)
+                self._display_results(frames, extracted_texts, mangaScript, audio_path, processing_dirs)
                 
                 # Clean up temporary files
                 os.unlink(temp_path)
@@ -231,7 +227,7 @@ class MangaAIApp:
                 if self.config.DEBUG:
                     st.exception(e)
     
-    def _process_extracted_text(self, extracted_texts: list[dict]) -> str:
+    def _process_extracted_text(self, extracted_texts: "list[dict]") -> str:
         """
         Process extracted text fragments into a coherent narrative without LLM
         
@@ -323,9 +319,37 @@ class MangaAIApp:
         
         return optimized.strip()
     
-    def _display_results(self, frames, extracted_texts, processed_text, audio_path):
+    def _display_results(self, frames, extracted_texts, manga_script_data, audio_path, processing_dirs=None):
         """Display processing results"""
         st.success("🎉 Audio generated successfully!")
+        
+        # Show processing directory information
+        if processing_dirs:
+            with st.expander("📁 Output Directory Structure", expanded=False):
+                st.code(f"""
+Processing Directory: {processing_dirs['base']}
+├── frames/     ({len(frames)} frame images)
+├── ocr/        (OCR analysis results)
+└── audio/      (Generated audio files)
+                """)
+        
+        # Convert structured data to text for display and statistics
+        if isinstance(manga_script_data, list):
+            # It's structured data from the new method
+            manga_script_text_parts = []
+            for entry in manga_script_data:
+                role = entry.get('role', '').lower()
+                description = entry.get('description', '')
+                if role == 'narrator':
+                    manga_script_text_parts.append(f"[{description}]")
+                elif role == 'character':
+                    manga_script_text_parts.append(f"{entry.get('role', 'Character').capitalize()}: {description}")
+                else:
+                    manga_script_text_parts.append(description)
+            manga_script_text = "\n".join(manga_script_text_parts)
+        else:
+            # It's already text (fallback for compatibility)
+            manga_script_text = manga_script_data
         
         # Statistics
         with st.expander("📈 Processing Statistics"):
@@ -338,16 +362,45 @@ class MangaAIApp:
             with col2:
                 avg_confidence = sum(f.get("ocr_confidence", 0) for f in extracted_texts) / max(1, len(extracted_texts))
                 st.metric("Avg OCR Confidence", f"{avg_confidence:.2f}")
-                st.metric("Output Characters", len(processed_text))
+                st.metric("Output Characters", len(manga_script_text))
             
             with col3:
-                tts_stats = self.tts_generator.get_tts_statistics(processed_text)
+                tts_stats = self.tts_generator.get_tts_statistics(manga_script_text)
                 st.metric("Estimated Duration", f"{tts_stats['estimated_duration_seconds']}s")
                 st.metric("Word Count", tts_stats['text_length_words'])
         
         # Show processed text
-        with st.expander("📄 Generated Transcript"):
-            st.text_area("Processed text:", processed_text, height=150)
+        with st.expander("📄 Generated Manga Script"):
+            st.text_area("Manga script for audio narration:", manga_script_text, height=150)
+            
+            # Show voice analysis - handle both structured and text formats
+            if isinstance(manga_script_data, list):
+                # Count roles directly from structured data
+                narrator_segments = len([s for s in manga_script_data if s.get('role', '').lower() == 'narrator'])
+                character_segments = len([s for s in manga_script_data if s.get('role', '').lower() == 'character'])
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("🎭 Multi-Voice", "Yes")
+                with col2:
+                    st.metric("📖 Narrator Parts", narrator_segments)
+                with col3:
+                    st.metric("💬 Character Parts", character_segments)
+            elif hasattr(self.tts_generator, '_has_voice_cues'):
+                # Fallback to text parsing for compatibility
+                has_voices = self.tts_generator._has_voice_cues(manga_script_text)
+                if has_voices:
+                    segments = self.tts_generator._parse_script(manga_script_text)
+                    narrator_segments = len([s for s in segments if s.get('role') == 'narrator'])
+                    character_segments = len([s for s in segments if s.get('role') == 'character'])
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("🎭 Multi-Voice", "Yes")
+                    with col2:
+                        st.metric("📖 Narrator Parts", narrator_segments)
+                    with col3:
+                        st.metric("💬 Character Parts", character_segments)
         
         # Audio player
         st.subheader("🎵 Generated Audio")
@@ -355,25 +408,27 @@ class MangaAIApp:
         # Get audio info
         audio_info = self.tts_generator.get_audio_info(audio_path)
         
-        if audio_info.get("is_mock", False):
-            st.warning("⚠️ This is a mock audio file for demonstration. Configure TTS services for actual audio generation.")
-            st.info("📝 Mock audio content preview:")
-            with open(audio_path, 'r') as f:
-                st.code(f.read()[:500] + "...")
-        else:
+        if audio_info.get("exists", False):
             # Real audio file
             with open(audio_path, 'rb') as audio_file:
                 audio_bytes = audio_file.read()
-                st.audio(audio_bytes, format='audio/wav')
+                
+                # Determine audio format from file extension
+                audio_format = "audio/mp3" if audio_path.endswith('.mp3') else "audio/wav"
+                file_extension = "mp3" if audio_path.endswith('.mp3') else "wav"
+                
+                st.audio(audio_bytes, format=audio_format)
             
             # Download button
             st.download_button(
                 label="📥 Download Audio",
                 data=audio_bytes,
-                file_name="manga_audio.wav",
-                mime="audio/wav",
+                file_name=f"manga_audio.{file_extension}",
+                mime=audio_format,
                 use_container_width=True
             )
+        else:
+            st.error("❌ Audio file not found or could not be generated.")
 
 
 def main():

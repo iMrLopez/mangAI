@@ -268,25 +268,38 @@ class FrameDetector:
         
         return rank, y_min_tol, min_index
     
-    def extract_frames(self, output_dir: Optional[str] = None) -> list[str]:
+    def extract_frames(self, output_dir: Optional[str] = None, processing_dirs: Optional[Dict[str, str]] = None) -> "tuple[list[str], str, Dict[str, str]]":
         """
         Extract detected frames to individual image files
         
         Args:
-            output_dir: Output directory path. If None, creates timestamped folder
+            output_dir: Output directory path. If None, creates structured processing folder
+            processing_dirs: Pre-created processing directory structure
         
         Returns:
-            Path to the output directory
+            Tuple of (frame_paths, frames_directory, processing_directories)
         """
         if not self.frames:
             raise ValueError("No frames detected. Run detect_frames() first.")
         
-        if output_dir is None:
+        if processing_dirs is None and output_dir is None:
+            # Use the structured directory approach
             timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            output_dir = f"extracted_frames_{timestamp_str}"
+            processing_dirs = self.config.create_processing_directory(timestamp_str)
+            output_dir = processing_dirs['frames']
+        elif processing_dirs is not None:
+            output_dir = processing_dirs['frames']
+        else:
+            # Create the directory if it doesn't exist and ensure output_dir is not None
+            if output_dir is None:
+                output_dir = "extracted_frames"
+            os.makedirs(output_dir, exist_ok=True)
+            # Create a simple processing_dirs structure for compatibility
+            processing_dirs = {'frames': output_dir, 'base': os.path.dirname(output_dir), 'ocr': '', 'audio': '', 'timestamp': ''}
         
-        # Create output directory
-        os.makedirs(output_dir, exist_ok=True)
+        # At this point, both output_dir and processing_dirs should be defined
+        assert output_dir is not None
+        assert processing_dirs is not None
         
         # Load original image
         image = cv2.imread(self.current_image_path)
@@ -303,7 +316,7 @@ class FrameDetector:
             cv2.imwrite(save_path, cropped)
         
         print(f"Extracted {len(self.frames)} frames to {output_dir}")
-        return frame_array
+        return frame_array, output_dir, processing_dirs
     
     def visualize_detections(self, image_path: str, model_type: str = "frame", save_path: Optional[str] = None):
         """

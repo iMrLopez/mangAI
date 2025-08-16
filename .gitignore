@@ -114,3 +114,5 @@ models/*/weights/
 ocr_output/
 
 virtualenv/
+
+processed_*

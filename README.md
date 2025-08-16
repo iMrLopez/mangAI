@@ -149,9 +149,10 @@ mangAI/
 ├── models/               # YOLO model files
 │   ├── yolo8l_50epochs_frame/
 │   └── yolo8l_50epochs/
-├── images/               # Sample test images
-├── dataset/              # Training datasets
-└── audio_output/         # Generated audio files
+├── processed_>date</ # outputs
+│   ├── audio/
+│   └── ocr/
+│   └── frames/
 ```
 
 ## Configuration

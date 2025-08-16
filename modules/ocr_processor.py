@@ -32,13 +32,14 @@ class OCRProcessor:
             lang=lang
         )
 
-    def extract_text(self, image_paths: List[str], language: str = "en") -> List[Dict]:
+    def extract_text(self, image_paths: List[str], language: str = "en", ocr_output_dir: str = "ocr_output") -> List[Dict]:
         """
         Extract text from a list of image file paths using OCR.
 
         Args:
             image_paths (List[str]): List of image file paths
             language (str): OCR language code
+            ocr_output_dir (str): Directory to save OCR results
 
         Returns:
             List[Dict]: Each dict includes file path, raw_text, cleaned_text, text_regions, and confidence
@@ -51,7 +52,7 @@ class OCRProcessor:
                 image = Image.open(image_path).convert("RGB")
                 processed_image = self._preprocess_image(image)
 
-                json_path = self._run_ocr_on_image(image)
+                json_path = self._run_ocr_on_image(image, ocr_output_dir)
                 raw_text = self._extract_text_from_json(json_path)
 
                 cleaned_text = self._clean_text(raw_text)

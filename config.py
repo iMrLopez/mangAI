@@ -3,7 +3,7 @@ Configuration module for MangAI application
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class Config:
@@ -79,3 +79,36 @@ class Config:
             return True
         except Exception:
             return False
+    
+    @classmethod
+    def create_processing_directory(cls, timestamp: Optional[str] = None) -> Dict[str, str]:
+        """
+        Create a structured processing directory with subfolders
+        
+        Args:
+            timestamp: Custom timestamp string, if None uses current time
+            
+        Returns:
+            Dictionary with paths to each subfolder
+        """
+        from datetime import datetime
+        
+        if timestamp is None:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        
+        base_dir = f"processed_{timestamp}"
+        
+        structure = {
+            'base': base_dir,
+            'frames': os.path.join(base_dir, 'frames'),
+            'ocr': os.path.join(base_dir, 'ocr'), 
+            'audio': os.path.join(base_dir, 'audio'),
+            'timestamp': timestamp
+        }
+        
+        # Create all directories
+        for path in structure.values():
+            if isinstance(path, str) and path != timestamp:
+                cls._create_dir(path)
+        
+        return structure
